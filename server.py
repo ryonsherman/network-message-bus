@@ -4,17 +4,51 @@ import os
 import socket
 import asyncore
 
+
 class ClientDispatcher(asyncore.dispatcher_with_send):
     def __init__(self, (sock, addr)):
         asyncore.dispatcher_with_send.__init__(self, sock)
-        self.addr = addr
+        self.addr = ':'.join(map(str, addr))
+        # self.step = 'NOAUTH'
+        # self.connected = False
+
+    def write(self, msg):
+        if not msg.endswith('\n'):
+            msg += '\n'
+        self.send(msg)
+        print 'write(%s):' % self.addr, msg.strip()
 
     def handle_read(self):
-        data = self.recv(1024)
-        if data:
-            # TODO: echo for now
-            print data,
-            self.send(data)
+        raw = self.recv(8192)
+        if not raw:
+            return
+
+        # data = raw.strip().split(':')
+        data = raw.strip()
+        print 'read(%s):' % self.addr, data
+
+        # if data[0] == 'AUTH' and self.step == 'NOAUTH':
+        #     self.step = 'SYN'
+        #     # self.write('%s:PUBKEY' % self.step)
+        #     self.write(self.step)
+        # elif data[0] == 'SYNACK' and self.step == 'SYN':
+        #     self.step = 'ACK'
+        #     # self.write('%s:APIKEY' % self.step)
+        #     self.write(self.step)
+        # elif data[0] == 'FIN' and self.step == 'ACK':
+        #     self.step = 'FIN'
+        #     self.write(self.step)
+        #     self.connected = True
+
+        #     print 'auth(%s)' % self.addr
+        # elif self.connected:
+        #     self.write('ERROR')
+        # else:
+        #     self.write('NOAUTH')
+
+    def handle_close(self):
+        print 'disconnect(%s)' % self.addr
+        self.close()
 
 
 class RemoteDispatcher(asyncore.dispatcher):
@@ -34,8 +68,8 @@ class RemoteDispatcher(asyncore.dispatcher):
     def handle_accept(self):
         connection = self.accept()
         if connection is not None:
-            ClientDispatcher(connection)
-
+            client = ClientDispatcher(connection)
+            print 'connect(%s)' % client.addr
 
 class Server(object):
     def __init__(self):

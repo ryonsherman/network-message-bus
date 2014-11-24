@@ -4,6 +4,10 @@ import os
 import socket
 import asyncore
 
+# import random
+# import hashlib
+# def foo():
+#     return hashlib.sha224(str(random.getrandbits(256))).hexdigest();
 
 class ClientDispatcher(asyncore.dispatcher_with_send):
     def __init__(self, (sock, addr)):
@@ -15,7 +19,6 @@ class ClientDispatcher(asyncore.dispatcher_with_send):
         if data:
             # TODO: echo for now
             print data,
-            self.send(data)
 
 
 class LocalDispatcher(asyncore.dispatcher):
@@ -43,18 +46,48 @@ class LocalDispatcher(asyncore.dispatcher):
             ClientDispatcher(connection)
 
 
-class RemoteDispatcher(asyncore.dispatcher):
+class RemoteDispatcher(asyncore.dispatcher_with_send):
     def __init__(self, sock):
-        asyncore.dispatcher.__init__(self)        
+        asyncore.dispatcher_with_send.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.sock = sock
+        # self.step = 'AUTH'
+        # self.connected = False
 
     def start(self):
         self.connect(self.sock)
+        # self.write(self.step)
 
     def stop(self):
         self.close()
+
+    def write(self, msg):
+        if not msg.endswith('\n'):
+            msg += '\n'
+        self.send(msg)
+        print 'write: %s' % msg.strip()
+
+    def handle_read(self):
+        raw = self.recv(8192)
+        if not raw:
+            return
+
+        # data = raw.strip().split(':')
+        data = raw.strip()
+        print 'read: %s' % data
+
+        # if data[0] == 'SYN' and self.step == 'AUTH':
+        #     self.step = 'SYNACK'
+        #     # self.write('%s:PUBKEY' % self.step)
+        #     self.write(self.step)
+        # elif data[0] == 'ACK' and self.step == 'SYNACK':
+        #     self.step = 'FIN'
+        #     # self.write('%s:APIKEY' % self.step)
+        #     self.write(self.step)
+        # elif data[0] == 'FIN' and self.step == 'FIN':
+        #     self.connected = True
+
 
 class Client(object):
     def __init__(self):
