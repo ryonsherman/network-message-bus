@@ -28,6 +28,7 @@ class Client(asyncore.dispatcher_with_send):
             msg += TERMINATOR
         # send message
         self.send(msg)
+        # log write
         logger.debug("Client write(%d) > [%s]: %s" %
             (len(msg), self.address, msg.strip()))
 
@@ -40,11 +41,14 @@ class Client(asyncore.dispatcher_with_send):
         # reset data buffer
         self.buffer = ''
 
+        # TODO: handle read
+
     def handle_read(self):
         # receive a chunk of data
         data = self.recv(8192)
         # return if no data received
         if not data: return
+        # log read
         logger.debug("Client read(%d) < [%s]: %s" %
             (len(data), self.address, data.strip()))
         # append data to buffer
@@ -54,6 +58,7 @@ class Client(asyncore.dispatcher_with_send):
             return self.read()
 
     def handle_close(self):
+        # log disconnection
         logger.info("Client [%s] disconnected." % self.address)
         # close connection
         self.close()
@@ -70,17 +75,21 @@ class Dispatcher(asyncore.dispatcher):
         self.sock = sock
 
     def start(self):
+        # log dispatcher start request
         logger.debug("Starting dispatcher...")
         # bind to socket
         self.bind(self.sock)
         # listen on socket
         self.listen(5)
+        # log dispatcher start
         logger.debug("Dispatcher started.")
 
     def stop(self):
+        # log dispatcher stop request
         logger.debug("Stopping dispatcher...")
         # close socket
         self.close()
+        # log dispatcher stop
         logger.debug("Dispatcher stopped.")
 
     def handle_accept(self):
@@ -91,8 +100,10 @@ class Dispatcher(asyncore.dispatcher):
             return
         # initialize client
         client = Client(connection)
+        # log connection
         logger.info("Client [%s] connecting..." % client.address)
-        # TODO:
+
+        # TODO: handle client transaction
         client.write('HELO')
 
 class Server(object):
@@ -110,9 +121,11 @@ class Server(object):
         self.remote = Dispatcher((self.address, self.port))
 
     def start(self):
+        # log server start request
         logger.info("Starting server...")
         # start remote dispatcher
         self.remote.start()
+        # log server start
         logger.info("Server started. Awaiting connections at [%s:%s]..." %
             (self.address, self.port))
         # start server loop
@@ -121,9 +134,11 @@ class Server(object):
         self.stop()
 
     def stop(self):
+        # log server stop request
         logger.info("Stopping server...")
         # stop remote dispatcher
         self.remote.stop()
+        # log server stop
         logger.info("Server stopped.")
 
 
