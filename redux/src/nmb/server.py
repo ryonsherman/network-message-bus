@@ -73,6 +73,7 @@ class Dispatcher(asyncore.dispatcher):
         self.set_reuse_addr()
         # assign dispatcher properties
         self.sock = sock
+        self.address = ':'.join(map(str, sock))
 
     def start(self):
         # log dispatcher start request
@@ -95,9 +96,10 @@ class Dispatcher(asyncore.dispatcher):
     def handle_accept(self):
         # accept connection
         connection = self.accept()
-        # return if invalid connection
+        # return if connection is invalid
         if connection is None:
             return
+
         # initialize client
         client = Client(connection)
         # log connection
@@ -172,6 +174,8 @@ def main():
     if not args.silent:
         # set console log handler
         logger.setConsoleLogHandler(args.log_level)
+    # set file log handler
+    logger.setFileLogHandler(args.log)
 
     # initialize server
     server = Server(
