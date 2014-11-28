@@ -19,7 +19,7 @@ formatter = logging.Formatter(LOG_FORMAT)
 
 # initialize file log handler
 def file_log_handler(log):
-    handler = logging.FileHandler(args.log)
+    handler = logging.FileHandler(log)
     handler.setFormatter(formatter)
     handler.setLevel(logging.INFO)
     logger.addHandler(handler)
