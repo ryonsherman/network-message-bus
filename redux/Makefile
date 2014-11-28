@@ -20,7 +20,7 @@ clean:
 	#
 	# Removing virtual development environment and setup files.
 	#
-	rm -rf dev build dist nmb.egg-info
+	rm -rf dev build dist nmb.egg-info *.log
 	#
 	# NOTICE!
 	#
