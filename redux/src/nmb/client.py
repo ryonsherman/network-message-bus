@@ -12,58 +12,11 @@ import asyncore
 
 from nmb.log import logger
 from nmb.parser import parser
+from nmb.sockets import SocketDispatcher
 
-TERMINATOR = '\r\n\r\n'
 
-
-class LocalClient(asyncore.dispatcher_with_send):
-    def __init__(self, (sock, addr)):
-        # initialize dispatcher
-        asyncore.dispatcher_with_send.__init__(self, sock)
-        # assign client properties
-        self.buffer  = ''
-        self.address = ':'.join(map(str, addr))
-
-    def write(self, msg):
-        # append terminator if not terminated
-        if not msg.endswith(TERMINATOR):
-            msg += TERMINATOR
-        # send message
-        self.send(msg)
-        # log write
-        logger.debug("Local client write(%d) > [%s]: %s" %
-            (len(msg), self.address, msg.strip()))
-
-    def read(self):
-        # return if buffer has no data
-        if not self.buffer: return
-
-        # get buffered data
-        data = self.buffer
-        # reset data buffer
-        self.buffer = ''
-
-        # TODO: handle read
-
-    def handle_read(self):
-        # receive a chunk of data
-        data = self.recv(8192)
-        # return if no data received
-        if not data: return
-        # log read
-        logger.debug("Local client read(%d) < [%s]: %s" %
-            (len(data), self.address, data.strip()))
-        # append data to buffer
-        self.buffer += data
-        # read buffer if data is terminated
-        if data.endswith(TERMINATOR):
-            return self.read()
-
-    def handle_close(self):
-        # log disconnection
-        logger.info("Local client [%s] disconnected." % self.address)
-        # close connection
-        self.close()
+class LocalClient(SocketDispatcher):
+    pass
 
 
 class LocalDispatcher(asyncore.dispatcher):
@@ -112,22 +65,20 @@ class LocalDispatcher(asyncore.dispatcher):
         # initialize client
         client = LocalClient(connection)
 
-        # TODO: handle client transaction
+        # TODO: handle local client transaction
         client.write('HELO')
 
 
-class RemoteDispatcher(asyncore.dispatcher_with_send):
+class RemoteDispatcher(SocketDispatcher):
     def __init__(self, sock):
         # initialize dispatcher
-        asyncore.dispatcher_with_send.__init__(self)
+        SocketDispatcher.__init__(self, (None, sock))
         # create socket
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         # reuase address
         self.set_reuse_addr()
         # assign dispatcher properties
-        self.sock    = sock
-        self.buffer  = ''
-        self.address = ':'.join(map(str, sock))
+        self.sock = sock
 
     def start(self):
         # log remote dispatcher start request
@@ -144,41 +95,6 @@ class RemoteDispatcher(asyncore.dispatcher_with_send):
         self.close()
         # log remote dispatcher stop
         logger.debug("Remote dispatcher stopped.")
-
-    def write(self, msg):
-        # append terminator if not terminated
-        if not msg.endswith(TERMINATOR):
-            msg += TERMINATOR
-        # send message
-        self.send(msg)
-        # log write
-        logger.debug("Client write(%d) > [%s]: %s" %
-            (len(msg), self.address, msg.strip()))
-
-    def read(self):
-        # return if buffer has no data
-        if not self.buffer: return
-
-        # get buffered data
-        data = self.buffer
-        # reset data buffer
-        self.buffer = ''
-
-        # TODO: handle read
-
-    def handle_read(self):
-        # receive a chunk of data
-        data = self.recv(8192)
-        # return if no data received
-        if not data: return
-        # log read
-        logger.debug("Client read(%d) < [%s]: %s" %
-            (len(data), self.address, data.strip()))
-        # append data to buffer
-        self.buffer += data
-        # read buffer if data is terminated
-        if data.endswith(TERMINATOR):
-            return self.read()
 
 
 class Client(object):
